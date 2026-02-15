@@ -51,7 +51,7 @@
                 attendance: 'present', relation: 'groom', name: '', kana: '', tel: '', email: '', hasAllergy: 'no', allergy: '', guests: [], useBus: 'no', busLocation: '', message: '' 
 });
 
-            const TOTAL_PIECES = 90;
+            const TOTAL_PIECES = 70;
             const PUZZLE_IMAGE_URL = "puzzle.jpg";
             
             // お二人のGAS URLをセットしました
@@ -153,15 +153,15 @@
                     {/* 3. Puzzle */}
                     <section className="max-w-4xl mx-auto px-6 py-24 text-center">
                         <h2 className="text-sm uppercase tracking-widest mb-12 text-[#a89a8e]">Our Story Puzzle</h2>
-                        <div className="relative aspect-[10/9] w-full max-w-2xl mx-auto bg-white rounded-lg shadow-2xl overflow-hidden border-[12px] border-white mb-8">
-                            <div className="grid grid-cols-10 grid-rows-9 h-full w-full">
+                        <div className="relative aspect-[10/7] w-full max-w-2xl mx-auto bg-white rounded-lg shadow-2xl overflow-hidden border-[12px] border-white mb-8">
+                            <div className="grid grid-cols-10 grid-rows-7 h-full w-full">
                                 {pieces.map(p => (
                                     <div key={p.id} className="border-[0.5px] border-white/30 relative overflow-hidden">
                                         <div className="absolute inset-0 bg-contain bg-no-repeat bg-center transition-opacity duration-1000"
                                             style={{ 
                                                 backgroundImage: `url(${PUZZLE_IMAGE_URL})`, 
                                                 width: '1000%', 
-                                                height: '900%', 
+                                                height: '700%', 
                                                 left: `-${(p.id % 10) * 100}%`, 
                                                 top: `-${Math.floor(p.id / 10) * 100}%`, 
                                                 opacity: p.isFilled ? 1 : 0.08 
@@ -348,6 +348,7 @@
 </body>
 
 </html>
+
 
 
 
