@@ -174,7 +174,7 @@
                     </section>
 
                     {/* 4. RSVP Form */}
-                    <section id="rsvp" className="bg-white/40 backdrop-blur-md py-24 px-6 flex justify-center">
+                   <section id="rsvp" className="bg-white/40 backdrop-blur-md py-24 px-6 flex justify-center">
                         <div className="max-w-2xl w-full bg-white p-8 md:p-12 rounded-3xl shadow-xl shadow-stone-200/50 border border-[#ede3d9]">
                             <div className="deco-line"></div>
                             <h2 className="text-3xl mb-12 font-light italic text-center text-[#5d534a]">RSVP</h2>
@@ -187,17 +187,23 @@
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmit} className="space-y-10 text-left">
-                                    {/* 基本情報入力部分は省略せず維持 */}
                                     <div className="space-y-8 max-w-md mx-auto">
                                         <div className="space-y-3">
                                             <label className={labelStyle + " text-center"}>Attendance / 出欠</label>
                                             <div className="flex gap-2">
-                                                {['present', 'absent'].map((type) => (
-                                                    <button key={type} type="button" onClick={() => setFormData({...formData, attendance: type})} className={`flex-1 py-3 rounded-xl border text-xs tracking-widest transition-all ${formData.attendance === type ? 'bg-[#5d534a] text-white border-[#5d534a]' : 'border-[#ede3d9] text-gray-400 hover:border-[#d4c5b9]'}`}>
-                                                        {type === 'present' ? 'ご出席' : 'ご欠席'}
+                                                {[
+                                                    { id: 'present', label: 'ご出席' },
+                                                    { id: 'absent', label: 'ご欠席' },
+                                                    { id: 'pending', label: '保留' }
+                                                ].map((item) => (
+                                                    <button key={item.id} type="button" onClick={() => setFormData({...formData, attendance: item.id})} className={`flex-1 py-3 rounded-xl border text-[10px] md:text-xs tracking-widest transition-all ${formData.attendance === item.id ? 'bg-[#5d534a] text-white border-[#5d534a]' : 'border-[#ede3d9] text-gray-400 hover:border-[#d4c5b9]'}`}>
+                                                        {item.label}
                                                     </button>
                                                 ))}
                                             </div>
+                                            {formData.attendance === 'pending' && (
+                                                <p className="text-[10px] text-orange-400 text-center animate-fade-in">※後ほど改めてご回答をお願いいたします</p>
+                                            )}
                                         </div>
                                         <div className="space-y-3">
                                             <label className={labelStyle + " text-center"}>Guest of / 新郎新婦</label>
@@ -219,11 +225,24 @@
                                         </div>
                                     </div>
 
+                                    {/* アレルギー選択欄 */}
+                                    <div className="space-y-4 pt-6 border-t border-stone-50">
+                                        <label className={labelStyle}>Allergy / アレルギーの有無</label>
+                                        <div className="flex gap-4">
+                                            <button type="button" onClick={() => setFormData({...formData, hasAllergy: 'no', allergy: ''})} className={`flex-1 py-3 rounded-xl border text-xs ${formData.hasAllergy === 'no' ? 'bg-stone-100 border-stone-400 font-bold' : 'border-[#ede3d9] text-gray-400'}`}>なし</button>
+                                            <button type="button" onClick={() => setFormData({...formData, hasAllergy: 'yes'})} className={`flex-1 py-3 rounded-xl border text-xs ${formData.hasAllergy === 'yes' ? 'bg-stone-100 border-stone-400 font-bold' : 'border-[#ede3d9] text-gray-400'}`}>あり</button>
+                                        </div>
+                                        {formData.hasAllergy === 'yes' && (
+                                            <div className="animate-fade-in">
+                                                <label className="text-[10px] text-gray-400 mb-1 block">具体的な内容をご記入ください</label>
+                                                <input type="text" className={inputStyle} value={formData.allergy} onChange={(e) => setFormData({...formData, allergy: e.target.value})} placeholder="例：海老、卵など" />
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {formData.attendance === 'present' && (
                                         <div className="space-y-10 pt-6 border-t border-stone-50 animate-fade-in">
-                                            <div><label className={labelStyle}>Your Allergy / アレルギー</label><input type="text" placeholder="特になければ空欄" className={inputStyle} value={formData.allergy} onChange={(e) => setFormData({...formData, allergy: e.target.value})} /></div>
-                                            
-                                            <div className="space-y-6 pt-4 border-t border-dashed border-stone-200">
+                                            <div className="space-y-6 pt-4">
                                                 <div className="flex items-center justify-between">
                                                     <label className={labelStyle}>Guests / お連れ様</label>
                                                     <button type="button" onClick={addGuestField} className="text-[10px] text-[#d4c5b9] border border-[#d4c5b9] px-3 py-1 rounded-full">+ 追加する</button>
@@ -235,7 +254,7 @@
                                                             <input required placeholder="名前" className="bg-transparent border-b border-stone-200 py-1 text-sm focus:outline-none" value={guest.name} onChange={(e) => handleGuestChange(index, 'name', e.target.value)} />
                                                             <input required placeholder="フリガナ" className="bg-transparent border-b border-stone-200 py-1 text-sm focus:outline-none" value={guest.kana} onChange={(e) => handleGuestChange(index, 'kana', e.target.value)} />
                                                         </div>
-                                                        <input placeholder="アレルギー" className="w-full mt-2 bg-transparent border-b border-stone-200 py-1 text-sm focus:outline-none" value={guest.allergy} onChange={(e) => handleGuestChange(index, 'allergy', e.target.value)} />
+                                                        <input placeholder="アレルギーがあれば記入" className="w-full mt-2 bg-transparent border-b border-stone-200 py-1 text-sm focus:outline-none" value={guest.allergy} onChange={(e) => handleGuestChange(index, 'allergy', e.target.value)} />
                                                     </div>
                                                 ))}
                                             </div>
@@ -267,7 +286,6 @@
                             )}
                         </div>
                     </section>
-
                     {/* 5. Access */}
                     <section className="py-24 px-6 text-center max-w-4xl mx-auto">
                         <div className="text-[10px] uppercase tracking-[0.3em] mb-4 text-gray-500 font-bold">Access</div>
@@ -330,4 +348,5 @@
 </body>
 
 </html>
+
 
