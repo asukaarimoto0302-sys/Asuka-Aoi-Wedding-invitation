@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Invitation | Asuka & Aoi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Noto+Serif+JP:wght@200;400&display=swap');
+        body { font-family: 'Noto Serif JP', serif; background-color: #fcf9f2; color: #5d534a; margin: 0; overflow-x: hidden; }
+        .font-serif { font-family: 'Cormorant Garamond', serif; }
+        .animate-fade-in { animation: fadeIn 1.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* カレンダーアイコン */
+        .calendar-icon {
+            width: 28px; height: 28px; border: 1.5px solid #d4c5b9; border-radius: 4px;
+            position: relative; margin: 0 auto 24px;
+        }
+        .calendar-icon::before {
+            content: ''; position: absolute; top: -5px; left: 5px; width: 1.5px; height: 6px; background: #d4c5b9; border-radius: 1px; box-shadow: 13px 0 0 #d4c5b9;
+        }
+        .calendar-icon::after {
+            content: ''; position: absolute; top: 7px; left: 0; width: 100%; height: 1.5px; background: #d4c5b9;
+        }
+
+        /* 装飾ライン */
+        .deco-line { width: 40px; height: 1px; background: #ede3d9; margin: 0 auto 24px; position: relative; }
+        .deco-line::after { content: '◈'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 0 8px; color: #d4c5b9; font-size: 10px; }
+
+        .spinner { border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 2px solid #fff; width: 18px; height: 18px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const App = () => {
+            const [pieces, setPieces] = useState([]);
+            const [filledCount, setFilledCount] = useState(0); 
+            const [isSubmitted, setIsSubmitted] = useState(false);
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            
+            const [formData, setFormData] = useState({ 
+                attendance: 'present', relation: 'groom', name: '', kana: '', tel: '', email: '', allergy: '', guests: [], useBus: 'no', busLocation: '', message: '' 
+            });
+
+            const TOTAL_PIECES = 90;
+            // パズル用画像（Google Drive ID）
+            const DRIVE_ID = "1_qR52jW0X6Xp_zFzS-z3R3D5p7T5n9";
+            const PUZZLE_IMAGE_URL = `https://drive.google.com/uc?export=view&id=${DRIVE_ID}`;
+            
+            // お二人のGAS URLをセットしました
+            const gasUrl = "https://script.google.com/macros/s/AKfycbx5R-2RSituKWrAtIqpi9Z9f8GkrSTLJ6Hti4XPKVKqa97LFcH42V31vOPb7rczD1eo/exec"; 
+
+            const labelStyle = "text-[10px] uppercase tracking-widest text-[#a89a8e] block mb-2 px-1";
+            const inputStyle = "w-full py-2 focus:outline-none bg-transparent border-b border-[#ede3d9] focus:border-[#d4c5b9]";
+
+            // 初期読み込み：現在の合計人数を取得
+            useEffect(() => {
+                fetch(`${gasUrl}?type=api`)
+                    .then(res => res.json())
+                    .then(data => { 
+                        if (data && typeof data.count === 'number') setFilledCount(data.count); 
+                    })
+                    .catch(e => { console.error("Count fetch error:", e); });
+            }, []);
+
+            // 人数に合わせてパズルピースを生成
+            useEffect(() => {
+                setPieces(Array.from({ length: TOTAL_PIECES }, (_, i) => ({ 
+                    id: i, 
+                    isFilled: i < filledCount 
+                })));
+            }, [filledCount]);
+
+            const addGuestField = () => { if (formData.guests.length < 4) setFormData({...formData, guests: [...formData.guests, { name: '', kana: '', allergy: '' }]}); };
+            const removeGuestField = (index) => { setFormData({...formData, guests: formData.guests.filter((_, i) => i !== index)}); };
+            const handleGuestChange = (index, field, value) => {
+                const newGuests = [...formData.guests];
+                newGuests[index][field] = value;
+                setFormData({...formData, guests: newGuests});
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setIsSubmitting(true);
+                const comingCount = formData.attendance === 'present' ? (1 + formData.guests.length) : 0;
+                
+                const params = new URLSearchParams();
+                params.append('formData', JSON.stringify({ 
+                    ...formData, 
+                    totalCount: comingCount,
+                    useBus: formData.useBus === 'yes' ? `利用する (${formData.busLocation === 'nagoya' ? '名古屋駅' : '知立駅'})` : '利用しない'
+                }));
+
+                try {
+                    await fetch(gasUrl, { method: 'POST', body: params, mode: 'no-cors' });
+                    setIsSubmitted(true);
+                    // 送信後、アニメーションのためにピースを増やす
+                    setFilledCount(prev => prev + comingCount);
+                    window.scrollTo({ top: document.getElementById('rsvp').offsetTop - 50, behavior: 'smooth' });
+                } catch (e) { 
+                    alert("送信エラーが発生しました。"); 
+                } finally { 
+                    setIsSubmitting(false); 
+                }
+            };
+
+            return (
+                <div className="min-h-screen pb-20">
+                    {/* Hero */}
+                    <section className="h-screen flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+                        <h2 className="text-sm tracking-[0.3em] uppercase mb-4 text-[#a89a8e]">Wedding Invitation</h2>
+                        <h1 className="text-6xl md:text-8xl mb-6 font-light font-serif italic text-[#5d534a]">Asuka & Aoi</h1>
+                        <p className="text-lg italic mb-12 font-serif text-[#5d534a]">2026.10.17 Saturday</p>
+                        <div className="w-px h-24 bg-[#d4c5b9]"></div>
+                    </section>
+
+                    {/* 1. Greeting */}
+                    <section className="max-w-2xl mx-auto px-6 py-32 text-center">
+                        <div className="space-y-8 leading-loose text-[#5d534a]">
+                            <p className="text-[#a89a8e] tracking-widest text-sm mb-12">— GREETING —</p>
+                            <p>日頃は大変お世話になり 心よりお礼申し上げます</p>
+                            <p>このたび 私たちは結婚式を挙げることになりました</p>
+                            <p>つきましては 微力な私たちにお力添えをいただきたく<br/>心ばかりの小宴をもうけたいと存じます</p>
+                            <p className="pt-12 text-3xl font-light italic font-serif text-[#a89a8e]">Asuka & Aoi</p>
+                        </div>
+                    </section>
+
+                    {/* 2. Date & Time */}
+                    <section className="py-24 px-6 text-center bg-[#f9f5ed]">
+                        <div className="calendar-icon"></div>
+                        <h3 className="text-[10px] uppercase tracking-[0.3em] mb-4 text-gray-500 font-bold">Date & Time</h3>
+                        <p className="text-2xl mb-2 font-light text-[#5d534a]">2026年10月17日（土）</p>
+                        <div className="flex justify-center gap-8 text-sm text-gray-600 mt-6 font-sans">
+                            <div className="text-center">
+                                <p className="uppercase text-[10px] tracking-widest mb-1 text-gray-400">Reception</p>
+                                <p className="text-xl font-light">16:20</p>
+                            </div>
+                            <div className="w-px h-12 bg-[#ede3d9]"></div>
+                            <div className="text-center">
+                                <p className="uppercase text-[10px] tracking-widest mb-1 text-gray-400">Ceremony</p>
+                                <p className="text-xl font-light">17:00</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 3. Puzzle */}
+                    <section className="max-w-4xl mx-auto px-6 py-24 text-center">
+                        <h2 className="text-sm uppercase tracking-widest mb-12 text-[#a89a8e]">Our Story Puzzle</h2>
+                        <div className="relative aspect-[10/9] w-full max-w-2xl mx-auto bg-white rounded-lg shadow-2xl overflow-hidden border-[12px] border-white mb-8">
+                            <div className="grid grid-cols-10 grid-rows-9 h-full w-full">
+                                {pieces.map(p => (
+                                    <div key={p.id} className="border-[0.5px] border-white/30 relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+                                            style={{ 
+                                                backgroundImage: `url(${PUZZLE_IMAGE_URL})`, 
+                                                width: '1000%', 
+                                                height: '900%', 
+                                                left: `-${(p.id % 10) * 100}%`, 
+                                                top: `-${Math.floor(p.id / 10) * 100}%`, 
+                                                opacity: p.isFilled ? 1 : 0.08 
+                                            }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <p className="text-xs text-[#a89a8e] italic font-serif">皆様からのお返事で パズルが完成に近づきます</p>
+                    </section>
+
+                    {/* 4. RSVP Form */}
+                    <section id="rsvp" className="bg-white/40 backdrop-blur-md py-24 px-6 flex justify-center">
+                        <div className="max-w-2xl w-full bg-white p-8 md:p-12 rounded-3xl shadow-xl shadow-stone-200/50 border border-[#ede3d9]">
+                            <div className="deco-line"></div>
+                            <h2 className="text-3xl mb-12 font-light italic text-center text-[#5d534a]">RSVP</h2>
+                            
+                            {isSubmitted ? (
+                                <div className="text-center space-y-6 py-10 animate-fade-in">
+                                    <div className="text-4xl mb-4">✨</div>
+                                    <h3 className="text-2xl font-medium">Thank you!</h3>
+                                    <p className="text-gray-500 leading-relaxed">ご回答ありがとうございました。<br/>当日お会いできるのを楽しみにしております。</p>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleSubmit} className="space-y-10 text-left">
+                                    {/* 基本情報入力部分は省略せず維持 */}
+                                    <div className="space-y-8 max-w-md mx-auto">
+                                        <div className="space-y-3">
+                                            <label className={labelStyle + " text-center"}>Attendance / 出欠</label>
+                                            <div className="flex gap-2">
+                                                {['present', 'absent'].map((type) => (
+                                                    <button key={type} type="button" onClick={() => setFormData({...formData, attendance: type})} className={`flex-1 py-3 rounded-xl border text-xs tracking-widest transition-all ${formData.attendance === type ? 'bg-[#5d534a] text-white border-[#5d534a]' : 'border-[#ede3d9] text-gray-400 hover:border-[#d4c5b9]'}`}>
+                                                        {type === 'present' ? 'ご出席' : 'ご欠席'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className={labelStyle + " text-center"}>Guest of / 新郎新婦</label>
+                                            <div className="flex gap-2">
+                                                <button type="button" onClick={() => setFormData({...formData, relation: 'groom'})} className={`flex-1 py-3 rounded-xl border text-xs tracking-widest transition-all ${formData.relation === 'groom' ? 'bg-[#d4c5b9] text-white border-[#d4c5b9]' : 'border-[#ede3d9] text-gray-400'}`}>新郎ゲスト</button>
+                                                <button type="button" onClick={() => setFormData({...formData, relation: 'bride'})} className={`flex-1 py-3 rounded-xl border text-xs tracking-widest transition-all ${formData.relation === 'bride' ? 'bg-[#d4c5b9] text-white border-[#d4c5b9]' : 'border-[#ede3d9] text-gray-400'}`}>新婦ゲスト</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6 pt-10 border-t border-stone-50">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div><label className={labelStyle}>Name / お名前</label><input required type="text" className={inputStyle} value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} /></div>
+                                            <div><label className={labelStyle}>Kana / フリガナ</label><input required type="text" className={inputStyle} value={formData.kana} onChange={(e) => setFormData({...formData, kana: e.target.value})} /></div>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div><label className={labelStyle}>Phone / 電話番号</label><input required type="tel" className={inputStyle} value={formData.tel} onChange={(e) => setFormData({...formData, tel: e.target.value})} /></div>
+                                            <div><label className={labelStyle}>Email / メール</label><input type="email" className={inputStyle} value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></div>
+                                        </div>
+                                    </div>
+
+                                    {formData.attendance === 'present' && (
+                                        <div className="space-y-10 pt-6 border-t border-stone-50 animate-fade-in">
+                                            <div><label className={labelStyle}>Your Allergy / アレルギー</label><input type="text" placeholder="特になければ空欄" className={inputStyle} value={formData.allergy} onChange={(e) => setFormData({...formData, allergy: e.target.value})} /></div>
+                                            
+                                            <div className="space-y-6 pt-4 border-t border-dashed border-stone-200">
+                                                <div className="flex items-center justify-between">
+                                                    <label className={labelStyle}>Guests / お連れ様</label>
+                                                    <button type="button" onClick={addGuestField} className="text-[10px] text-[#d4c5b9] border border-[#d4c5b9] px-3 py-1 rounded-full">+ 追加する</button>
+                                                </div>
+                                                {formData.guests.map((guest, index) => (
+                                                    <div key={index} className="p-4 bg-stone-50 rounded-2xl relative border border-stone-100 mb-4">
+                                                        <button type="button" onClick={() => removeGuestField(index)} className="absolute top-4 right-4 text-stone-300">×</button>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <input required placeholder="名前" className="bg-transparent border-b border-stone-200 py-1 text-sm focus:outline-none" value={guest.name} onChange={(e) => handleGuestChange(index, 'name', e.target.value)} />
+                                                            <input required placeholder="フリガナ" className="bg-transparent border-b border-stone-200 py-1 text-sm focus:outline-none" value={guest.kana} onChange={(e) => handleGuestChange(index, 'kana', e.target.value)} />
+                                                        </div>
+                                                        <input placeholder="アレルギー" className="w-full mt-2 bg-transparent border-b border-stone-200 py-1 text-sm focus:outline-none" value={guest.allergy} onChange={(e) => handleGuestChange(index, 'allergy', e.target.value)} />
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="space-y-4 pt-6 border-t border-stone-50">
+                                                <label className={labelStyle}>Shuttle Bus / バス利用</label>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <button type="button" onClick={() => setFormData({...formData, useBus: 'no'})} className={`py-3 rounded-xl border text-xs ${formData.useBus === 'no' ? 'bg-[#d4c5b9] text-white border-[#d4c5b9]' : 'border-[#ede3d9] text-gray-400'}`}>利用しない</button>
+                                                    <button type="button" onClick={() => setFormData({...formData, useBus: 'yes'})} className={`py-3 rounded-xl border text-xs ${formData.useBus === 'yes' ? 'bg-[#d4c5b9] text-white border-[#d4c5b9]' : 'border-[#ede3d9] text-gray-400'}`}>利用する</button>
+                                                </div>
+                                                {formData.useBus === 'yes' && (
+                                                    <div className="grid grid-cols-2 gap-4 mt-2">
+                                                        <button type="button" onClick={() => setFormData({...formData, busLocation: 'nagoya'})} className={`py-3 rounded-xl border text-[10px] ${formData.busLocation === 'nagoya' ? 'bg-stone-100 border-stone-400 font-bold' : 'border-[#ede3d9] text-gray-400'}`}>名古屋駅発</button>
+                                                        <button type="button" onClick={() => setFormData({...formData, busLocation: 'chiryu'})} className={`py-3 rounded-xl border text-[10px] ${formData.busLocation === 'chiryu' ? 'bg-stone-100 border-stone-400 font-bold' : 'border-[#ede3d9] text-gray-400'}`}>知立駅発</button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-6 border-t border-stone-50">
+                                        <label className={labelStyle}>Message / メッセージ</label>
+                                        <textarea className="w-full border border-[#ede3d9] p-4 rounded-2xl focus:outline-none bg-[#fcf9f2]/50 text-sm h-32 resize-none" value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} />
+                                    </div>
+                                    <button type="submit" disabled={isSubmitting || !formData.name} className="w-full bg-[#5d534a] text-white py-6 rounded-full hover:bg-[#4a423b] transition-all tracking-[0.4em] flex justify-center disabled:opacity-50">
+                                        {isSubmitting ? <div className="spinner"></div> : "SEND RSVP"}
+                                    </button>
+                                </form>
+                            )}
+                        </div>
+                    </section>
+
+                    {/* 5. Access */}
+                    <section className="py-24 px-6 text-center max-w-4xl mx-auto">
+                        <div className="text-[10px] uppercase tracking-[0.3em] mb-4 text-gray-500 font-bold">Access</div>
+                        <p className="text-2xl mb-4 font-light text-[#5d534a]">オランジュ：ベール</p>
+                        <p className="text-sm text-gray-500 mb-6 leading-relaxed font-sans">
+                            愛知県日進市竹ノ山3-1303<br />TEL: 0561-75-5522
+                        </p>
+
+                        <a 
+                            href="https://maps.app.goo.gl/r6S3pUExvU9nUvY68" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-6 py-3 mb-10 rounded-full border border-[#d4c5b9] text-[#a89a8e] text-[10px] tracking-widest hover:bg-[#d4c5b9] hover:text-white transition-all"
+                        >
+                            <span>📍</span> OPEN GOOGLE MAPS
+                        </a>
+
+                        <div className="w-full rounded-2xl overflow-hidden shadow-lg border border-[#ede3d9] mb-12">
+                            <iframe 
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3262.822986383626!2d137.03450977626355!3d35.13608775975037!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x600366a707166e9b%3A0xc4874452097e33e!2z44Kq44Op44Oz44K477ya44OZ44O844Or!5e0!3m2!1sja!2sjp!4v1715654321000!5m2!1sja!2sjp" 
+                                width="100%" 
+                                height="400" 
+                                style={{ border: 0 }} 
+                                allowFullScreen="" 
+                                loading="lazy"
+                            ></iframe>
+                        </div>
+
+                        {/* バス情報 */}
+                        <div className="bg-white p-8 rounded-3xl border border-[#ede3d9] text-left max-w-2xl mx-auto shadow-sm">
+                            <div className="flex items-center gap-3 mb-8 text-[#d4c5b9]">
+                                <span className="text-xl">🚌</span>
+                                <h4 className="text-sm uppercase tracking-widest font-bold text-[#5d534a]">Shuttle Bus Information</h4>
+                            </div>
+                            <div className="space-y-8 font-sans">
+                                <div className="border-l-2 border-[#d4c5b9] pl-6 py-1">
+                                    <p className="text-[10px] text-[#a89a8e] uppercase tracking-widest mb-1 font-bold">From Nagoya Station</p>
+                                    <p className="text-md font-medium text-[#5d534a]">名古屋駅発（広小路口付近）</p>
+                                    <p className="text-xs text-gray-400 mt-1 italic">詳細は確定次第、別途ご連絡いたします</p>
+                                </div>
+                                <div className="border-l-2 border-[#d4c5b9] pl-6 py-1">
+                                    <p className="text-[10px] text-[#a89a8e] uppercase tracking-widest mb-1 font-bold">From Chiryu Station</p>
+                                    <p className="text-md font-medium text-[#5d534a]">知立駅発（北口ロータリー付近）</p>
+                                    <p className="text-xs text-gray-400 mt-1 italic">詳細は確定次第、別途ご連絡いたします</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <footer className="py-12 text-center border-t border-[#ede3d9]/30">
+                        <p className="text-[10px] text-gray-300 tracking-[0.3em] uppercase">Wedding of Asuka & Aoi</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
