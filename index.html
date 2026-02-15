@@ -240,7 +240,7 @@
                                         )}
                                     </div>
 
-                                    {formData.attendance === 'present' && (
+                                    {formData.attendance !== 'absent' && (
                                         <div className="space-y-10 pt-6 border-t border-stone-50 animate-fade-in">
                                             <div className="space-y-6 pt-4">
                                                 <div className="flex items-center justify-between">
@@ -348,6 +348,7 @@
 </body>
 
 </html>
+
 
 
 
